@@ -20,7 +20,7 @@ public class APITestor {
         AtomicInteger http500Count = new AtomicInteger();
 
 
-        String apiUrl = "https://tw.rter.info/capi.php"; // 替换为实际 API URL
+        String apiUrl = "https://XXXXXXXXXXXXi.php"; // 替换为实际 API URL
 
         // 创建线程池
         ExecutorService executorService = Executors.newFixedThreadPool(8);
