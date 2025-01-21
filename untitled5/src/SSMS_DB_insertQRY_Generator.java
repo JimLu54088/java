@@ -2,6 +2,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class SSMS_DB_insertQRY_Generator {
@@ -36,12 +37,20 @@ public class SSMS_DB_insertQRY_Generator {
             int intINF_HIS_last_Col_Num = Integer.parseInt(strINF_HIS_last_Col_Num);
             String KTHR_INF_insertQuery_Prefix = PropertyLoader.gerProperty("KTHR_INF_insertQuery_Prefix");
             String KTHR_INF_HIS_insertQuery_Prefix = PropertyLoader.gerProperty("KTHR_INF_HIS_insertQuery_Prefix");
-
+            String kthrMMC_PNT_value = PropertyLoader.gerProperty("kthrMMC_PNT_value");
+            String kthrINF_tableName = PropertyLoader.gerProperty("kthrINF_tableName");
+            String kthrINF_HIS_tableName = PropertyLoader.gerProperty("kthrINF_HIS_tableName");
+            String kthr_inf_output_selectQRY_path = PropertyLoader.gerProperty("outputKTHR_selectQRY_path");
+            String kthr_inf_his_output_selectQRY_path = PropertyLoader.gerProperty("outputKTHR_HIS_selectQRY_path");
 
             insertQueryGenerator(excelFilePath, kthrINF_sheetName, outputKTHR_INF_txtFile_Path, intINF_sheet_last_row, intINF_last_Col_Num, KTHR_INF_insertQuery_Prefix);
             insertQueryGenerator(excelFilePath, kthrINF_HIS_sheetName, outputKTHR_INF_HIS_txtFile_path, intINF_HIS_sheet_last_row, intINF_HIS_last_Col_Num, KTHR_INF_HIS_insertQuery_Prefix);
 
             replaceNULL_txt(outputKTHR_INF_txtFile_Path, outputKTHR_INF_HIS_txtFile_path);
+
+            selectQueryGenerator(excelFilePath, kthrMMC_PNT_value, kthrINF_sheetName, intINF_sheet_last_row, kthrINF_tableName, kthr_inf_output_selectQRY_path);
+            selectQueryGenerator(excelFilePath, kthrMMC_PNT_value, kthrINF_sheetName, intINF_sheet_last_row, kthrINF_HIS_tableName, kthr_inf_his_output_selectQRY_path);
+
 
 
         } catch (Exception ex) {
@@ -146,4 +155,48 @@ public class SSMS_DB_insertQRY_Generator {
 
         System.out.println("Replaced text in file: " + filePath);
     }
+
+    private static void selectQueryGenerator(String excelFilePath, String kthrMMC_PNT_value,String INF_sheetName, int lastRow, String kthrINF_tableName,String output_txtFile_Path ){
+        try (FileInputStream fis = new FileInputStream(excelFilePath);
+             Workbook workbook = new XSSFWorkbook(fis);
+             BufferedWriter writer = new BufferedWriter(new FileWriter(output_txtFile_Path))) {
+
+            // 获取第一个Sheet
+            Sheet sheet = workbook.getSheet(INF_sheetName);
+
+            // 读取A2到A11的值
+            List<String> values = new ArrayList<>();
+            for (int i = 1; i <= lastRow; i++) {
+                Row row = sheet.getRow(i);
+                if (row != null) {
+                    Cell cell = row.getCell(0);
+                    if (cell != null) {
+                        values.add(cell.getStringCellValue());
+                    }
+                }
+            }
+
+            // 构建SQL语句
+            StringBuilder sqlBuilder = new StringBuilder("select * from " + kthrINF_tableName + " where kuruma in (");
+            for (int i = 0; i < values.size(); i++) {
+                sqlBuilder.append("'").append(values.get(i)).append("'");
+                if (i < values.size() - 1) {
+                    sqlBuilder.append(",\r\n");
+                }
+            }
+            sqlBuilder.append(") and MMNNC='").append(kthrMMC_PNT_value).append("';");
+
+            // 寫入到文件中
+            writer.write(sqlBuilder.toString());
+            writer.newLine();
+            System.out.println("select query file: " + output_txtFile_Path + " generated successfully.");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
 }
